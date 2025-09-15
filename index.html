@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Klondike Solitaire</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Klondike Solitaire</h1>
+      <div class="controls">
+        <button id="newGameBtn" title="Start a new game (shuffle)">
+          New Game
+        </button>
+        <button id="undoBtn" title="Undo the last move">Undo</button>
+        <button id="autoBtn" title="Try to auto move to foundations">
+          Auto
+        </button>
+        <span class="status">
+          <span class="meter"
+            ><span class="dot" aria-hidden="true"></span>
+            <span id="winStatus">Game on</span></span
+          >
+          <span>Moves: <strong id="moveCount">0</strong></span>
+          <span>Time: <strong id="time">0:00</strong></span>
+          <span class="hint">Tip: double click a card to auto move</span>
+        </span>
+      </div>
+    </header>
+
+    <main class="board" aria-label="Solitaire board">
+      <!-- Row 1: Stock, Waste, Spacer, Foundations x4 -->
+      <div class="row">
+        <div class="pile" id="stock" aria-label="Stock">
+          <div class="stack"></div>
+        </div>
+        <div class="pile" id="waste" aria-label="Waste">
+          <div class="stack"></div>
+        </div>
+        <div></div>
+        <div
+          class="pile foundation"
+          data-foundation-index="0"
+          aria-label="Foundation 1"
+        >
+          <div class="stack"></div>
+        </div>
+        <div
+          class="pile foundation"
+          data-foundation-index="1"
+          aria-label="Foundation 2"
+        >
+          <div class="stack"></div>
+        </div>
+        <div
+          class="pile foundation"
+          data-foundation-index="2"
+          aria-label="Foundation 3"
+        >
+          <div class="stack"></div>
+        </div>
+        <div
+          class="pile foundation"
+          data-foundation-index="3"
+          aria-label="Foundation 4"
+        >
+          <div class="stack"></div>
+        </div>
+      </div>
+
+      <!-- Row 2: Tableau x7 -->
+      <div class="row">
+        <div class="pile tableau" data-tableau-index="0" aria-label="Tableau 1">
+          <div class="stack"></div>
+        </div>
+        <div class="pile tableau" data-tableau-index="1" aria-label="Tableau 2">
+          <div class="stack"></div>
+        </div>
+        <div class="pile tableau" data-tableau-index="2" aria-label="Tableau 3">
+          <div class="stack"></div>
+        </div>
+        <div class="pile tableau" data-tableau-index="3" aria-label="Tableau 4">
+          <div class="stack"></div>
+        </div>
+        <div class="pile tableau" data-tableau-index="4" aria-label="Tableau 5">
+          <div class="stack"></div>
+        </div>
+        <div class="pile tableau" data-tableau-index="5" aria-label="Tableau 6">
+          <div class="stack"></div>
+        </div>
+        <div class="pile tableau" data-tableau-index="6" aria-label="Tableau 7">
+          <div class="stack"></div>
+        </div>
+      </div>
+    </main>
+
+    <template id="cardTemplate">
+      <div class="card" role="button" aria-pressed="false">
+        <div class="inner">
+          <div class="rank"></div>
+          <div class="suit" aria-hidden="true"></div>
+          <div class="pip" aria-hidden="true"></div>
+        </div>
+      </div>
+    </template>
+
+    <script src="game.js" defer></script>
+  </body>
+</html>
