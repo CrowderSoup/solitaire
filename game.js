@@ -19,6 +19,7 @@
     newGameBtn: document.getElementById("newGameBtn"),
     undoBtn: document.getElementById("undoBtn"),
     autoBtn: document.getElementById("autoBtn"),
+    controls: document.querySelector(".controls"),
     tpl: document.getElementById("cardTemplate"),
   };
 
@@ -35,10 +36,27 @@
     moveCount: 0,
     startTs: 0,
     timer: 0,
+    paused: false,
+    pauseAt: 0,
     drag: /** @type {null|{active:boolean,from:'waste'|'tableau'|'foundation',fromIndex:number,startIndex:number,ghost:HTMLElement,offsetX:number,offsetY:number}} */ (
       null
     ),
   };
+
+  // Inject Pause button if missing (since HTML may not include it)
+  if (!document.getElementById("pauseBtn")) {
+    const btn = document.createElement("button");
+    btn.id = "pauseBtn";
+    btn.title = "Pause/Resume the game";
+    btn.textContent = "Pause";
+    (document.querySelector(".controls") || document.body).insertBefore(
+      btn,
+      el.autoBtn || null,
+    );
+    el.pauseBtn = btn;
+  } else {
+    el.pauseBtn = document.getElementById("pauseBtn");
+  }
 
   // Helpers
   function makeDeck() {
@@ -295,6 +313,7 @@
 
   // Click handlers
   function onCardClick(ev) {
+    if (state.paused) return;
     if (state.drag && state.drag.active) return;
     const node = /** @type {HTMLElement} */ (ev.currentTarget);
     const id = node.dataset.id;
@@ -333,6 +352,7 @@
   }
 
   function onCardDoubleClick(ev) {
+    if (state.paused) return;
     const node = /** @type {HTMLElement} */ (ev.currentTarget);
     const id = node.dataset.id;
     const loc = findCard(id);
@@ -414,6 +434,7 @@
 
   // Stock / Waste
   document.getElementById("stock").addEventListener("click", () => {
+    if (state.paused) return;
     if (state.stock.length) {
       const c = state.stock.pop();
       c.faceUp = true;
@@ -435,12 +456,14 @@
     }
   });
   document.getElementById("waste").addEventListener("click", () => {
+    if (state.paused) return;
     if (state.waste.length && !state.selected)
       select({ from: "waste", index: 0, start: state.waste.length - 1 });
   });
 
   // Undo
   function undo() {
+    if (state.paused) return;
     const last = state.moves.pop();
     if (!last) return;
     if (last.type === "deal") {
@@ -490,6 +513,7 @@
 
   // Auto move
   function autoMove() {
+    if (state.paused) return;
     let moved = false,
       steps = 0;
     do {
@@ -538,6 +562,7 @@
 
   // Drag & Drop
   function onCardPointerDown(e) {
+    if (state.paused) return;
     if (e.button !== 0) return;
     const node = /** @type {HTMLElement} */ (e.currentTarget);
     const id = node.dataset.id;
@@ -705,6 +730,29 @@
     return { type: "tableau", index: parseInt(best.dataset.tableauIndex, 10) };
   }
 
+  // Pause helpers
+  function setPaused(val) {
+    const on = !!val;
+    if (on === state.paused) return;
+    if (on) {
+      state.pauseAt = Date.now();
+      state.paused = true;
+      stopTimer();
+      document.body.classList.add("paused");
+      if (el.pauseBtn) el.pauseBtn.textContent = "Resume";
+      el.winStatus.textContent = "Paused";
+    } else {
+      const delta = state.pauseAt ? Date.now() - state.pauseAt : 0;
+      state.startTs += delta;
+      state.pauseAt = 0;
+      state.paused = false;
+      document.body.classList.remove("paused");
+      if (el.pauseBtn) el.pauseBtn.textContent = "Pause";
+      startTimer();
+      checkWin();
+    }
+  }
+
   // Timer helpers
   function startTimer() {
     if (state.timer) clearInterval(state.timer);
@@ -724,7 +772,7 @@
   // Empty-slot pile clicks
   document.querySelectorAll(".foundation").forEach((pileEl, fIdx) =>
     pileEl.addEventListener("click", () => {
-      if (!state.selected) return;
+      if (state.paused || !state.selected) return;
       const mt = getSelectedTop();
       if (canPlaceOnFoundation(topCard(state.foundations[fIdx]), mt))
         commitSelectedTo("foundation", fIdx);
@@ -732,7 +780,7 @@
   );
   document.querySelectorAll(".tableau").forEach((pileEl, tIdx) =>
     pileEl.addEventListener("click", () => {
-      if (!state.selected) return;
+      if (state.paused || !state.selected) return;
       const mt = getSelectedTop();
       if (canPlaceOnTableau(topCard(state.tableau[tIdx]), mt))
         commitSelectedTo("tableau", tIdx);
@@ -740,10 +788,30 @@
   );
 
   // Buttons and keys
-  el.newGameBtn.addEventListener("click", dealNewGame);
-  el.undoBtn.addEventListener("click", undo);
-  el.autoBtn.addEventListener("click", autoMove);
+  el.newGameBtn.addEventListener("click", () => {
+    if (state.paused) setPaused(false);
+    dealNewGame();
+  });
+  el.undoBtn.addEventListener("click", () => {
+    if (!state.paused) undo();
+  });
+  el.autoBtn.addEventListener("click", () => {
+    if (!state.paused) autoMove();
+  });
+  if (el.pauseBtn)
+    el.pauseBtn.addEventListener("click", () => setPaused(!state.paused));
   window.addEventListener("keydown", (e) => {
+    if (e.key === "p") {
+      setPaused(!state.paused);
+      return;
+    }
+    if (state.paused) {
+      if (e.key === "n") {
+        setPaused(false);
+        dealNewGame();
+      }
+      return;
+    }
     if (e.key === "n") dealNewGame();
     if (e.key === "u") undo();
     if (e.key === "a") autoMove();
@@ -751,6 +819,7 @@
 
   // Game setup
   function dealNewGame() {
+    setPaused(false);
     stopTimer();
     state.stock = [];
     state.waste = [];
